@@ -10,3 +10,4 @@ data = data/data.max(axis=0)
 # main クラス
 cartpole_env = Environment(FinanceEnv, data)
 cartpole_env.run()
+cartpole_env.plot_reward()

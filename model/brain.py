@@ -64,7 +64,7 @@ class Brain:
             # actionは[torch.LongTensor of size 1x1]の形になります
 
         return action
-
+        
     def make_minibatch(self):
         '''2. ミニバッチの作成'''
 

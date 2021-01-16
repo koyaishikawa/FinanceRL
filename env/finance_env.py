@@ -19,7 +19,7 @@ class FinanceEnv(gym.Env):
         if action == 0:
             self.reward = 0
         
-        elif action == 1:
+        elif action == 1: #buy
             if self.share_num < 0:
                 self.reward = self.share + self.state[self.index]*self.share_num
                 self.share = 0
@@ -30,7 +30,7 @@ class FinanceEnv(gym.Env):
                 self.share_num += 1
                 self.share  += self.state[self.index]
                   
-        elif action == -1:
+        elif action == 2: #sell
             if self.share_num > 0:
                 self.reward = self.state[self.index]*(self.share_num) - self.share
                 self.share = 0

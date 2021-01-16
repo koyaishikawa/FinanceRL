@@ -4,6 +4,7 @@ import setting
 import torch
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
  
 
 
@@ -21,6 +22,8 @@ class Environment:
             observation = self.env.reset()  # 環境の初期化
 
             self.reward_memory = []
+            self.total_reward = 0
+
             state = observation  # 観測をそのまま状態sとして使用
             state = torch.from_numpy(state).type(torch.FloatTensor)  # numpy変数をPyTorchのテンソルに変換
             state = torch.unsqueeze(state, 0)  # size 4をsize 1x4に変換
@@ -33,7 +36,8 @@ class Environment:
                 if done:  # ステップ数が200経過するか、一定角度以上傾くとdoneはtrueになる
                     state_next = None  # 次の状態はないので、Noneを格納
 
-                self.reward_memory.append(reward)
+                self.total_reward += reward.item()
+                self.reward_memory.append(self.total_reward)
                 reward = torch.from_numpy(reward).type(torch.FloatTensor)  # 普段は報酬0
                 state_next = observation_next  # 観測をそのまま状態とする
                 state_next = torch.from_numpy(state_next).type(torch.FloatTensor)  # numpy変数をPyTorchのテンソルに変換
@@ -47,4 +51,7 @@ class Environment:
 
                 # 観測の更新
                 state = state_next
-
+    
+    def plot_reward(self):
+        plt.plot(self.reward_memory)
+        plt.show()
