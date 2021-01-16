@@ -1,12 +1,13 @@
-from memory import ReplayMemory
-from net import Net
+from model.memory import ReplayMemory
+from model.util import Transition
+from model.net import Net
 import torch
 from torch import optim
 import torch.nn.functional as F
 import setting
 import random
 import numpy as np
-from util import Transition
+
 
 
 class Brain:
@@ -16,16 +17,18 @@ class Brain:
         # 経験を記憶するメモリオブジェクトを生成
         self.memory = ReplayMemory(setting.CAPACITY)
 
+        self.dev = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
         # ニューラルネットワークを構築
         n_in, n_mid, n_out = num_states, 32, num_actions
-        self.main_q_network = Net(n_in, n_mid, n_out)  # Netクラスを使用
-        self.target_q_network = Net(n_in, n_mid, n_out)  # Netクラスを使用
+        self.main_q_network = Net(n_in, n_mid, n_out).to(self.dev) # Netクラスを使用
+        self.target_q_network = Net(n_in, n_mid, n_out).to(self.dev)  # Netクラスを使用
         print(self.main_q_network)  # ネットワークの形を出力
 
         # 最適化手法の設定
         self.optimizer = optim.Adam(
             self.main_q_network.parameters(), lr=0.0001)
-
+            
     def replay(self):
         '''Experience Replayでネットワークの結合パラメータを学習'''
 
@@ -50,14 +53,14 @@ class Brain:
         if epsilon <= np.random.uniform(0, 1):
             self.main_q_network.eval()  # ネットワークを推論モードに切り替える
             with torch.no_grad():
-                action = self.main_q_network(state).max(1)[1].view(1, 1)
+                action = self.main_q_network(state.to(self.dev)).max(1)[1].view(1, 1)
             # ネットワークの出力の最大値のindexを取り出します = max(1)[1]
             # .view(1,1)は[torch.LongTensor of size 1]　を size 1x1 に変換します
 
         else:
             # 0,1の行動をランダムに返す
             action = torch.LongTensor(
-                [[random.randrange(self.num_actions)]])  # 0,1の行動をランダムに返す
+                [[random.randrange(self.num_actions)]]).to(self.dev)  # 0,1の行動をランダムに返す
             # actionは[torch.LongTensor of size 1x1]の形になります
 
         return action
@@ -82,7 +85,7 @@ class Brain:
         # catはConcatenates（結合）のことです。
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
-        reward_batch = torch.cat(batch.reward)
+        reward_batch = torch.cat(batch.reward).to(self.dev)
         non_final_next_states = torch.cat([s for s in batch.next_state
                                            if s is not None])
 
@@ -101,7 +104,7 @@ class Brain:
         # ここから実行したアクションa_tに対応するQ値を求めるため、action_batchで行った行動a_tが右か左かのindexを求め
         # それに対応するQ値をgatherでひっぱり出す。
         self.state_action_values = self.main_q_network(
-            self.state_batch).gather(1, self.action_batch)
+            self.state_batch.to(self.dev)).gather(1, self.action_batch)
 
         # 3.3 max{Q(s_t+1, a)}値を求める。ただし次の状態があるかに注意。
 
@@ -109,14 +112,14 @@ class Brain:
         non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None,
                                                     self.batch.next_state)))
         # まずは全部0にしておく
-        next_state_values = torch.zeros(setting.BATCH_SIZE)
+        next_state_values = torch.zeros(setting.BATCH_SIZE).to(self.dev)
 
-        a_m = torch.zeros(setting.BATCH_SIZE).type(torch.LongTensor)
+        a_m = torch.zeros(setting.BATCH_SIZE).type(torch.LongTensor).to(self.dev)
 
         # 次の状態での最大Q値の行動a_mをMain Q-Networkから求める
         # 最後の[1]で行動に対応したindexが返る
         a_m[non_final_mask] = self.main_q_network(
-            self.non_final_next_states).detach().max(1)[1]
+            self.non_final_next_states.to(self.dev)).detach().max(1)[1]
 
         # 次の状態があるものだけにフィルターし、size 32を32×1へ
         a_m_non_final_next_states = a_m[non_final_mask].view(-1, 1)
@@ -125,7 +128,7 @@ class Brain:
         # detach()で取り出す
         # squeeze()でsize[minibatch×1]を[minibatch]に。
         next_state_values[non_final_mask] = self.target_q_network(
-            self.non_final_next_states).gather(1, a_m_non_final_next_states).detach().squeeze()
+            self.non_final_next_states.to(self.dev)).gather(1, a_m_non_final_next_states.to(self.dev)).detach().squeeze()
 
         # 3.4 教師となるQ(s_t, a_t)値を、Q学習の式から求める
         expected_state_action_values = self.reward_batch + setting.GAMMA * next_state_values

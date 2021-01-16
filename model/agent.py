@@ -1,4 +1,4 @@
-from brain import Brain
+from model.brain import Brain
 
 
 class Agent:
