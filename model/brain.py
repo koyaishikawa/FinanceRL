@@ -45,9 +45,11 @@ class Brain:
         # 4. 結合パラメータの更新
         self.update_main_q_network()
 
-    def decide_action(self, state, episode):
+    def decide_action(self, state, episode, eval):
         '''現在の状態に応じて、行動を決定する'''
         # ε-greedy法で徐々に最適行動のみを採用する
+        if eval:
+            epsilon = 0
         epsilon = 0.5 * (1 / (episode + 1))
 
         if epsilon <= np.random.uniform(0, 1):
@@ -64,7 +66,7 @@ class Brain:
             # actionは[torch.LongTensor of size 1x1]の形になります
 
         return action
-        
+
     def make_minibatch(self):
         '''2. ミニバッチの作成'''
 

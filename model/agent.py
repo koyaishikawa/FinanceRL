@@ -10,9 +10,9 @@ class Agent:
         '''Q関数を更新する'''
         self.brain.replay()
 
-    def get_action(self, state, episode):
+    def get_action(self, state, episode, eval=False):
         '''行動を決定する'''
-        action = self.brain.decide_action(state, episode)
+        action = self.brain.decide_action(state, episode, eval)
         return action
 
     def memorize(self, state, action, state_next, reward):
