@@ -1,6 +1,6 @@
 from model.memory import ReplayMemory
 from model.util import Transition
-from model.net import Net
+# from model.net import Net, DuelNet, TimeNet
 import torch
 from torch import optim
 import torch.nn.functional as F
@@ -11,53 +11,48 @@ import numpy as np
 
 
 class Brain:
-    def __init__(self, num_states, num_actions):
-        self.num_actions = num_actions  # CartPoleの行動（右に左に押す）の2を取得
-
-        # 経験を記憶するメモリオブジェクトを生成
+    def __init__(self, num_states, num_actions, Model):
+        self.num_actions = num_actions 
         self.memory = ReplayMemory(setting.CAPACITY)
 
-        self.dev = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        #self.dev = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.dev = torch.device('cpu')
 
-        # ニューラルネットワークを構築
-        n_in, n_mid, n_out = num_states, 32, num_actions
-        self.main_q_network = Net(n_in, n_mid, n_out).to(self.dev) # Netクラスを使用
-        self.target_q_network = Net(n_in, n_mid, n_out).to(self.dev)  # Netクラスを使用
+        n_in, n_mid, n_out = num_states, 10, num_actions
+        self.main_q_network = Model(n_in, n_mid, n_out).to(self.dev) # Netクラスを使用
+        self.target_q_network = Model(n_in, n_mid, n_out).to(self.dev)  # Netクラスを使用
         print(self.main_q_network)  # ネットワークの形を出力
 
-        # 最適化手法の設定
         self.optimizer = optim.Adam(
-            self.main_q_network.parameters(), lr=0.0001)
+            self.main_q_network.parameters(), lr=setting.lr)
             
     def replay(self):
         '''Experience Replayでネットワークの結合パラメータを学習'''
 
-        # 1. メモリサイズの確認
         if len(self.memory) < setting.BATCH_SIZE:
             return
 
-        # 2. ミニバッチの作成
         self.batch, self.state_batch, self.action_batch, self.reward_batch, self.non_final_next_states = self.make_minibatch()
 
-        # 3. 教師信号となるQ(s_t, a_t)値を求める
         self.expected_state_action_values = self.get_expected_state_action_values()
 
-        # 4. 結合パラメータの更新
         self.update_main_q_network()
 
-    def decide_action(self, state, episode, eval):
+    def decide_action(self, state, episode, evl):
         '''現在の状態に応じて、行動を決定する'''
-        # ε-greedy法で徐々に最適行動のみを採用する
-        if eval:
-            epsilon = 0
-        epsilon = 0.5 * (1 / (episode + 1))
+        if evl:
+            self.target_q_network.eval()  # ネットワークを推論モードに切り替える
+            with torch.no_grad():
+                action = self.target_q_network(state.to(self.dev)).max(1)[1].view(1, 1)
+            return action - 1
+
+        else:
+            epsilon = 0.5 * (1 / (episode//5 + 1))
 
         if epsilon <= np.random.uniform(0, 1):
             self.main_q_network.eval()  # ネットワークを推論モードに切り替える
             with torch.no_grad():
                 action = self.main_q_network(state.to(self.dev)).max(1)[1].view(1, 1)
-            # ネットワークの出力の最大値のindexを取り出します = max(1)[1]
-            # .view(1,1)は[torch.LongTensor of size 1]　を size 1x1 に変換します
 
         else:
             # 0,1の行動をランダムに返す
@@ -65,7 +60,7 @@ class Brain:
                 [[random.randrange(self.num_actions)]]).to(self.dev)  # 0,1の行動をランダムに返す
             # actionは[torch.LongTensor of size 1x1]の形になります
 
-        return action
+        return action - 1
 
     def make_minibatch(self):
         '''2. ミニバッチの作成'''
@@ -106,12 +101,12 @@ class Brain:
         # ここから実行したアクションa_tに対応するQ値を求めるため、action_batchで行った行動a_tが右か左かのindexを求め
         # それに対応するQ値をgatherでひっぱり出す。
         self.state_action_values = self.main_q_network(
-            self.state_batch.to(self.dev)).gather(1, self.action_batch)
+            self.state_batch.to(self.dev)).gather(1, self.action_batch + 1)
 
         # 3.3 max{Q(s_t+1, a)}値を求める。ただし次の状態があるかに注意。
 
         # cartpoleがdoneになっておらず、next_stateがあるかをチェックするインデックスマスクを作成
-        non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None,
+        non_final_mask = torch.BoolTensor(tuple(map(lambda s: s is not None,
                                                     self.batch.next_state)))
         # まずは全部0にしておく
         next_state_values = torch.zeros(setting.BATCH_SIZE).to(self.dev)
@@ -133,29 +128,21 @@ class Brain:
             self.non_final_next_states.to(self.dev)).gather(1, a_m_non_final_next_states.to(self.dev)).detach().squeeze()
 
         # 3.4 教師となるQ(s_t, a_t)値を、Q学習の式から求める
-        expected_state_action_values = self.reward_batch + setting.GAMMA * next_state_values
-
+        expected_state_action_values = self.reward_batch + setting.GAMMA * next_state_values.unsqueeze(1)
         return expected_state_action_values
 
     def update_main_q_network(self):
         '''4. 結合パラメータの更新'''
 
-        # 4.1 ネットワークを訓練モードに切り替える
         self.main_q_network.train()
 
-        # 4.2 損失関数を計算する（smooth_l1_lossはHuberloss）
-        # expected_state_action_valuesは
-        # sizeが[minbatch]になっているので、unsqueezeで[minibatch x 1]へ
         loss = F.smooth_l1_loss(self.state_action_values,
-                                self.expected_state_action_values.unsqueeze(1))
+                                self.expected_state_action_values)
 
-        # 4.3 結合パラメータを更新する
         self.optimizer.zero_grad()  # 勾配をリセット
         loss.backward()  # バックプロパゲーションを計算
-        self.optimizer.step()  # 結合パラメータを更新
+        self.optimizer.step()  # ここおおおおおおおおおおおおおおおお
 
     def update_target_q_network(self):  # DDQNで追加
         '''Target Q-NetworkをMainと同じにする'''
         self.target_q_network.load_state_dict(self.main_q_network.state_dict())
-
-        # CartPoleで動くエージェントクラスです、棒付き台車そのものになります
