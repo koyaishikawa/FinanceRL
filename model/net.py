@@ -81,8 +81,42 @@ class TimeNet(nn.Module):
 
         output = long_out + middle_out + short_out
 
-        #output = torch.cat([long_out, middle_out, short_out], axis=1)
-        #output = self.out(output)
+        # output = torch.cat([long_out, middle_out, short_out], axis=1)
+        # output = self.out(output)
 
         return output
+
+
+class TrendNet(nn.Module):
+    def __init__(self, n_in, n_mid, n_out):
+        super(TrendNet, self).__init__()
+        self.trend_QN1 = nn.Linear(n_in, n_mid)
+        self.trend_QN2 = nn.Linear(n_mid, n_out)
+
+        self.up_trend_QN1 = nn.Linear(n_in, n_mid)
+        self.up_trend_QN2 = nn.Linear(n_mid, n_out)
+
+        self.no_trend_QN1 = nn.Linear(n_in, n_mid)
+        self.no_trend_QN2 = nn.Linear(n_mid, n_out)
+
+        self.down_trend_QN1 = nn.Linear(n_in, n_mid)
+        self.down_trend_QN2 = nn.Linear(n_mid, n_out)
+
+    def forward(self, state):
+        trend_out = F.relu(self.trend_QN1(state))
+        trend_out = self.trend_QN2(trend_out)
+        trend_out = trend_out - trend_out.mean(1, keepdim=True).expand(-1, trend_out.size(1))
+
+        up_trend_out = F.relu(self.up_trend_QN1(state))
+        up_trend_out = self.up_trend_QN2(up_trend_out)
+
+        no_trend_out = F.relu(self.no_trend_QN1(state))
+        no_trend_out = self.no_trend_QN2(no_trend_out)
+
+        down_trend_out = F.relu(self.down_trend_QN1(state))
+        down_trend_out = self.down_trend_QN2(down_trend_out)
+
+        trend_out 
+        
+        up_trend_out - up_trend_out.mean(1, keepdim=True).expand(-1, up_trend_out.size(1))
         
