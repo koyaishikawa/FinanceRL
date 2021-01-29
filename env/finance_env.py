@@ -3,7 +3,7 @@ import numpy as np
 
 
 # 離散環境
-class FinanceEnv(gym.Env):
+class FinanceEnv:
     def __init__(self, data, return_data, invest_amount=100):
         self.invest_amount = invest_amount
         self.data = data
@@ -64,7 +64,6 @@ class FinanceEnv(gym.Env):
         self.share = 0
         self.share_amount = 0
         self.share_info = np.array([0,0])  # [self.prev_action, 利益]
-        self.observation = np.append(self.data[self.t], self.share_info) 
         self.reward = 0
         self.prev_action = 0
 

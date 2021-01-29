@@ -1,2 +1,4 @@
 setting.py
-logs/*
+logs/
+data/
+*.ipynb

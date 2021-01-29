@@ -55,8 +55,8 @@ class TimeNet(nn.Module):
         self.middle_priod = n_in_2
         self.short_priod = n_in_3
 
-        self.long = nn.Linear(n_in, n_mid) 
-        self.long_mid = nn.Linear(n_mid, n_out)
+        self.long = nn.Linear(n_in - 2, n_mid) 
+        self.long_mid = nn.Linear(n_mid , n_out)
 
         self.middle = nn.Linear(n_in_2, n_mid_2) 
         self.middle_mid = nn.Linear(n_mid_2, n_out)
@@ -64,10 +64,10 @@ class TimeNet(nn.Module):
         self.short = nn.Linear(n_in_3, n_mid_3) 
         self.short_mid = nn.Linear(n_mid_3, n_out)
 
-        self.out = nn.Linear(n_out * 3, n_out)
+        self.out = nn.Linear(n_out * 3 + 2, n_out)
 
     def forward(self, state):
-        long_out = F.relu(self.long(state))
+        long_out = F.relu(self.long(state[:,:-2]))
         long_out = self.long_mid(long_out)
         long_out = long_out - torch.mean(long_out, axis=1, keepdim=True).expand_as(long_out)
 
@@ -79,10 +79,10 @@ class TimeNet(nn.Module):
         short_out = self.short_mid(short_out)
         short_out = short_out - torch.mean(short_out, axis=1, keepdim=True).expand_as(short_out)
 
-        output = long_out + middle_out + short_out
+        #output = long_out + middle_out + short_out
 
-        #output = torch.cat([long_out, middle_out, short_out], axis=1)
-        #output = self.out(output)
+        output = torch.cat([long_out, middle_out, short_out, state[:, -2:]], axis=1)
+        output = self.out(output)
 
         return output
         

@@ -36,7 +36,7 @@ class Environment:
             state = torch.from_numpy(state).type(torch.FloatTensor)  # numpy変数をPyTorchのテンソルに変換
             state = torch.unsqueeze(state, 0)  # size 4をsize 1x4に変換
 
-            for step in range(self.env.length - 1):  # 1エピソードのループ
+            for step in tqdm(range(self.env.length - 1)):  # 1エピソードのループ
                     
                 action = self.agent.get_action(state, episode)
                 observation_next, reward, done, _ = self.env.step(action.item())
