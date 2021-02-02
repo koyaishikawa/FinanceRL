@@ -8,17 +8,11 @@ Transition = namedtuple(
 class ReplayMemory:
 
     def __init__(self, CAPACITY):
-        self.capacity = CAPACITY  # メモリの最大長さ
-        self.memory = deque(maxlen=CAPACITY)  # 経験を保存する変数
-        self.index = 0  # 保存するindexを示す変数
+        self.capacity = CAPACITY
+        self.memory = deque(maxlen=CAPACITY)
+        self.index = 0 
 
     def push(self, state, action, state_next, reward):
-        #'''transition = (state, action, state_next, reward)をメモリに保存する'''
-        #if len(self.memory) < self.capacity:
-        #    self.memory.append(None)
-        #self.memory[self.index] = Transition(state, action, state_next, reward)
-        #self.index = (self.index + 1) % self.capacity
-
         self.memory.append(Transition(state, action, state_next, reward))
 
     def sample(self, batch_size):
