@@ -1,6 +1,0 @@
-setting.py
-logs/
-data/
-*.ipynb
-__pycache__/
-model/__pycache__/
