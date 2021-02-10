@@ -20,3 +20,6 @@ class Agent:
 
     def update_trade_q_function(self):
         self.brain.update_trade_q_network()
+
+    def load_model(self, path):
+        self.brain.load_model(path)

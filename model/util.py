@@ -34,6 +34,26 @@ def calculate_index(reward_memory):
 
     # プロット用
     reward_plot = reward_memory.cumsum()
+    plt.xlabel('step')
+    plt.ylabel('profit')
     plt.plot(reward_plot)
 
     print(f'return_mean:{return_mean}\nreturn_std:{return_std} \n DD_mean:{dd_mean} \n DD_std:{dd_std} \n sharp_ratio:{sharp_ratio} \n MDD:{mdd} \n win_rate{win_rate} \n Trade_Num:{trade_num}')
+
+def EWMA(data, windows=60):
+    ema = np.zeros(data.shape[0])
+    var = np.zeros(data.shape[0])
+    alpha = 2 / (windows + 1)
+    prev_ema = ema[:windows].mean()
+    prev_var = ema[:windows].var()
+    ema[windows-1] = prev_ema
+    var[windows-1] = prev_var
+    for idx in range(windows, data.shape[0]):
+        delta = data[idx] - prev_ema
+        present_ema = prev_ema + alpha * delta
+        present_var = (1-alpha)*(prev_var) + alpha * (delta ** 2)
+        ema[idx] = present_ema
+        var[idx] = present_var
+        prev_ema = present_ema
+        prev_var = present_var
+    return ema, var

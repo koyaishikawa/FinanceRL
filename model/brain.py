@@ -9,7 +9,6 @@ import random
 import numpy as np
 
 
-
 class Brain:
     def __init__(self, num_states, num_actions, Model, use_GPU=False):
         self.num_actions = num_actions 
@@ -112,3 +111,8 @@ class Brain:
     def update_trade_q_network(self):
         '''Target Q-NetworkをMainと同じにする'''
         self.trade_q_network.load_state_dict(self.main_q_network.state_dict())
+
+    def load_model(self, path):
+        self.main_q_network.load_state_dict(torch.load(path))
+        self.trade_q_network .load_state_dict(torch.load(path))
+        self.target_q_network .load_state_dict(torch.load(path))
