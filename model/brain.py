@@ -20,7 +20,7 @@ class Brain:
             self.dev = torch.device('cpu')
         print(f'run type:{self.dev}')
 
-        n_in, n_mid, n_out = num_states, 10, num_actions
+        n_in, n_mid, n_out = num_states, 120, num_actions
         self.main_q_network = Model(n_in, n_mid, n_out).to(self.dev)
         self.target_q_network = Model(n_in, n_mid, n_out).to(self.dev)
         self.trade_q_network = Model(n_in, n_mid, n_out).to(self.dev)

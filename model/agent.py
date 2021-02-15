@@ -3,7 +3,7 @@ from model.brain import Brain
 
 class Agent:
     def __init__(self, num_states, num_actions, Model):
-        self.brain = Brain(num_states, num_actions, Model)  # エージェントが行動を決定するための頭脳を生成
+        self.brain = Brain(num_states, num_actions, Model) 
 
     def update_q_function(self):
         self.brain.replay()

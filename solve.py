@@ -1,36 +1,31 @@
-from model.env import Environment
-import pandas as pd
 from env.finance_env import FinanceEnv
-from model.net import Net, DuelNet, TimeNet
-import matplotlib.pyplot as plt
-from model.util import calculate_index, EWMA
-
+from model.create_model import create_model
+from model.util import calculate_index, EWMA, make_env_data
+from model.train_env import Environment
+import argparse    
 import torch
+import pandas as pd
+import yaml
+import matplotlib.pyplot as plt
+import numpy as np
+
 torch.manual_seed(0)
 
-df = pd.read_csv('data/nikkei.csv', index_col=0)
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', default='config.yml')
+
+args = parser.parse_args()    
+
+with open(args.config) as f:
+    config = yaml.safe_load(f.read())
+
+df = pd.read_csv(config['data'], index_col=0)
+df = df.head(200)
 df = df[['Close']]
 
-ema, var = EWMA(df['Close'].values)
-tmp = df[['Close']]
-tmp['mean'] = ema
-tmp['var'] = var
-tmp['std'] = tmp['var']**(1/2)
-tmp = tmp.loc[tmp['mean'] != 0]
-normal = (tmp['Close'] - tmp['mean'])/tmp['std']
+train_data, close_data, return_data = make_env_data(df)
+model = create_model(config['model'])
 
-df['diff'] = normal.diff()
-
-for i in range(60):
-    df[f'return_{i}'] = df['diff'].shift(i)
-df = df.loc[~df.isnull().any(axis=1)]
-    
-df.drop(columns = ['diff'], inplace=True)
-df = df.head(5000)
-data = df.to_numpy()
-return_data = df['return_0'].to_numpy()
-close_data = df['Close'].to_numpy()
-train_data = df.iloc[:,1:].to_numpy()
-
-env =Environment(FinanceEnv, train_data, close_data, return_data, TimeNet, repeat=30)
+env =Environment(FinanceEnv, train_data, close_data, return_data, model, **config['env'])
 env.online_run()
+
