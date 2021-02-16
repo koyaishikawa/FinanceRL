@@ -2,8 +2,8 @@ from model.brain import Brain
 
 
 class Agent:
-    def __init__(self, num_states, num_actions, Model):
-        self.brain = Brain(num_states, num_actions, Model) 
+    def __init__(self, num_states, num_actions, Model, use_GPU, capacity, lr, batch_size, gamma):
+        self.brain = Brain(num_states, num_actions, Model, use_GPU, capacity, lr, batch_size, gamma) 
 
     def update_q_function(self):
         self.brain.replay()

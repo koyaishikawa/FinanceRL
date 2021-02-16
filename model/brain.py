@@ -4,15 +4,17 @@ from model.util import Transition
 import torch
 from torch import optim
 import torch.nn.functional as F
-import setting
 import random
 import numpy as np
 
 
 class Brain:
-    def __init__(self, num_states, num_actions, Model, use_GPU=False):
+    def __init__(self, num_states, num_actions, Model, use_GPU, capacity, lr, batch_size, gamma):
         self.num_actions = num_actions 
-        self.memory = ReplayMemory(setting.CAPACITY)
+        self.memory = ReplayMemory(capacity)
+        self.lr = lr
+        self.batch_size = batch_size
+        self.gamma = gamma
 
         if use_GPU:
             self.dev = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -27,12 +29,12 @@ class Brain:
         print(self.main_q_network)
 
         self.optimizer = optim.Adam(
-            self.main_q_network.parameters(), lr=setting.lr)
+            self.main_q_network.parameters(), lr=lr)
             
     def replay(self):
         '''Experience Replayでネットワークの結合パラメータを学習'''
 
-        if len(self.memory) < setting.BATCH_SIZE:
+        if len(self.memory) < self.batch_size:
             return
 
         self.batch, self.state_batch, self.action_batch, self.reward_batch, self.non_final_next_states = self.make_minibatch()
@@ -55,7 +57,7 @@ class Brain:
         return action - 1
 
     def make_minibatch(self):
-        transitions = self.memory.sample(setting.BATCH_SIZE)
+        transitions = self.memory.sample(self.batch_size)
 
         batch = Transition(*zip(*transitions))
 
@@ -77,9 +79,9 @@ class Brain:
 
         non_final_mask = torch.BoolTensor(tuple(map(lambda s: s is not None,
                                                     self.batch.next_state)))
-        next_state_values = torch.zeros(setting.BATCH_SIZE).to(self.dev)
+        next_state_values = torch.zeros(self.batch_size).to(self.dev)
 
-        a_m = torch.zeros(setting.BATCH_SIZE).type(torch.LongTensor).to(self.dev)
+        a_m = torch.zeros(self.batch_size).type(torch.LongTensor).to(self.dev)
 
         a_m[non_final_mask] = self.main_q_network(
             self.non_final_next_states.to(self.dev)).detach().max(1)[1]
@@ -89,7 +91,7 @@ class Brain:
         next_state_values[non_final_mask] = self.target_q_network(
             self.non_final_next_states.to(self.dev)).gather(1, a_m_non_final_next_states.to(self.dev)).detach().squeeze()
 
-        expected_state_action_values = self.reward_batch + setting.GAMMA * next_state_values.unsqueeze(1)
+        expected_state_action_values = self.reward_batch + self.gamma * next_state_values.unsqueeze(1)
         return expected_state_action_values
 
     def update_main_q_network(self):

@@ -1,6 +1,5 @@
 import gym
 from model.agent import Agent
-import setting
 import torch
 import numpy as np
 from tqdm import tqdm
@@ -11,7 +10,23 @@ import plotly.graph_objects as go
 
 class Environment:
 
-    def __init__(self, Env, train_data, close_data, return_data, Model, repeat, num_actions, invest_amount, cost_rate):
+    def __init__(self,
+                 Env,
+                 train_data,
+                 close_data,
+                 return_data,
+                 Model,
+                 repeat,
+                 num_actions,
+                 invest_amount,
+                 cost_rate,
+                 num_episodes,
+                 update_rate,
+                 use_GPU,
+                 capacity,
+                 lr,
+                 batch_size,
+                 gamma):
         """
         Env : シュミレーション環境
         train_data : 学習データ
@@ -36,13 +51,16 @@ class Environment:
         self.trade_return_data = return_data
         self.env_trade = Env(self.trade_train_data, self.trade_close_data, self.trade_return_data, invest_amount, cost_rate)            
 
-        self.agent = Agent(num_states, num_actions, Model)
+        self.agent = Agent(num_states, num_actions, Model, use_GPU, capacity, lr, batch_size, gamma)
         self.repeat = repeat
         self.action_memory = []
 
+        self.num_episodes = num_episodes
+        self.update_rate = update_rate
+
     def online_run(self):
         writer = SummaryWriter(log_dir="./logs")
-        for episode in tqdm(range(setting.NUM_EPISODES)):  # 試行数分繰り返す
+        for episode in tqdm(range(self.num_episodes)):  # 試行数分繰り返す
             state_random = self.env_random.reset()
             state_trade = self.env_trade.reset()
 
@@ -71,7 +89,7 @@ class Environment:
                     self.agent.update_trade_q_function()
                 
                 # targetfunctionの更新
-                if step % setting.update_rate == 0:
+                if step % self.update_rate == 0:
                     self.agent.update_target_q_function()
 
             writer.add_scalar("main/total_reward", self.total_reward, episode)
