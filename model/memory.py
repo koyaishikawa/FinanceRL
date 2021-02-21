@@ -1,8 +1,6 @@
 from collections import namedtuple, deque
+from model.util import Transition
 import random
-
-Transition = namedtuple(
-    'Transition', ('state', 'action', 'next_state', 'reward'))
 
 
 class ReplayMemory:
@@ -12,8 +10,8 @@ class ReplayMemory:
         self.memory = deque(maxlen=CAPACITY)
         self.index = 0 
 
-    def push(self, state, action, state_next, reward):
-        self.memory.append(Transition(state, action, state_next, reward))
+    def push(self, state, action, state_next, reward, done):
+        self.memory.append(Transition(state, action, state_next, reward, done))
 
     def sample(self, batch_size):
         '''batch_size分だけ、ランダムに保存内容を取り出す'''

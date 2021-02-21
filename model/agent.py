@@ -12,8 +12,8 @@ class Agent:
         action = self.brain.decide_action(state, mode)
         return action
 
-    def memorize(self, state, action, state_next, reward):
-        self.brain.memory.push(state, action, state_next, reward)
+    def memorize(self, state, action, state_next, reward, done):
+        self.brain.memory.push(state, action, state_next, reward, done)
 
     def update_target_q_function(self):
         self.brain.update_target_q_network()

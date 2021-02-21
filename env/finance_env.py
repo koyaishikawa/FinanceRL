@@ -19,7 +19,7 @@ class FinanceEnv:
         self.return_data = return_data
         self.time = 0
         self.length = train_data.shape[0]
-        self.terminal = False
+        self.done = False
         self.share = 0
         self.prev_action = 0
         self.cum_return = 0
@@ -38,6 +38,7 @@ class FinanceEnv:
 
     def step(self, action):
         self.time += 1
+        self.done = False
 
         # アクション変化なし
         if self.prev_action - action == 0:
@@ -51,12 +52,13 @@ class FinanceEnv:
 
             # during buy or sell 
             else:
+                self.reward = self.cum_return * self.prev_action - self.cost_rate * 5 * abs(self.prev_action)
                 self.cum_return += self.return_data[self.time]
 
         # 新しいアクションが執行
         else:
             # reward: model用
-            self.reward = self.cum_return - self.cost_rate * abs(self.prev_action)
+            self.reward = self.cum_return * self.prev_action - self.cost_rate * 5 * abs(self.prev_action)
             # profit: 可視化用（実際の取引収益）
             self.profit = (self.close_data[self.time - 1] - self.profit_start) * self.share_amount - (self.cost_rate * self.invest_amount) * abs(self.prev_action)    
             self.profit /= self.invest_amount        
@@ -75,28 +77,28 @@ class FinanceEnv:
 
             # excute(決済)
             else:
+                self.done = True
                 self.share_amount = 0
                 self.cum_return = 0 
                 self.profit_start = 0 
 
-        self.prev_action = action
+        self.prev_action = action 
         self.observation = self.train_data[self.time]
         self.share_info = np.array([self.prev_action, self.cum_return])
 
         if self.time == self.length:
-            self.terminal = True
+            self.done = True
         
         self.state = np.append(self.observation, self.share_info)
         self.profit_list.append(self.profit)
 
-        return self.state, np.array(self.reward).reshape(1,1), self.terminal, {}
+        return self.state, np.array(self.reward).reshape(1,1), self.done, {}
         
     def reset(self):
         self.time = 0
-        self.terminal = False
         self.share = 0
         self.share_num = 0
-        self.terminal = False
+        self.done = False
         self.share = 0
         self.share_amount = 0
         self.cum_return = 0

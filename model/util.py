@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 Transition = namedtuple(
-    'Transition', ('state', 'action', 'next_state', 'reward'))
+    'Transition', ('state', 'action', 'next_state', 'reward', 'done'))
 
 
 def calculate_index(reward_memory):
@@ -46,8 +46,8 @@ def EWMA(data, windows=60):
     ema_mean = np.zeros(data.shape[0])
     ema_var = np.zeros(data.shape[0])
     alpha = 2 / (windows + 1)
-    prev_ema = ema_mean[:windows].mean()
-    prev_var = ema_mean[:windows].var()
+    prev_ema = data[:windows].mean()
+    prev_var = data[:windows].var()
     ema_mean[windows-1] = prev_ema
     ema_var[windows-1] = prev_var
     for idx in range(windows, data.shape[0]):

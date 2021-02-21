@@ -37,7 +37,7 @@ class Brain:
         if len(self.memory) < self.batch_size:
             return
 
-        self.batch, self.state_batch, self.action_batch, self.reward_batch, self.non_final_next_states = self.make_minibatch()
+        self.batch, self.state_batch, self.action_batch, self.reward_batch, self.non_final_next_states, self.done_batch = self.make_minibatch()
 
         self.expected_state_action_values = self.get_expected_state_action_values()
 
@@ -64,10 +64,12 @@ class Brain:
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward).to(self.dev)
+        done_batch = torch.cat(batch.done).to(self.dev)
+
         non_final_next_states = torch.cat([s for s in batch.next_state
                                            if s is not None])
 
-        return batch, state_batch, action_batch, reward_batch, non_final_next_states
+        return batch, state_batch, action_batch, reward_batch, non_final_next_states, done_batch
 
     def get_expected_state_action_values(self):
 
@@ -91,7 +93,7 @@ class Brain:
         next_state_values[non_final_mask] = self.target_q_network(
             self.non_final_next_states.to(self.dev)).gather(1, a_m_non_final_next_states.to(self.dev)).detach().squeeze()
 
-        expected_state_action_values = self.reward_batch + self.gamma * next_state_values.unsqueeze(1)
+        expected_state_action_values = self.reward_batch +  (~self.done_batch) * self.gamma * next_state_values.unsqueeze(1)
         return expected_state_action_values
 
     def update_main_q_network(self):

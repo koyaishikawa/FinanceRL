@@ -119,9 +119,10 @@ class Environment:
         state_next = torch.unsqueeze(state_next, 0)  # size 4をsize 1x4に変換
 
         reward = self.utillity_function(reward)
+        done = torch.tensor(done).view(1,1)
 
         # メモリに経験を追加
-        self.agent.memorize(state, action, state_next, reward)
+        self.agent.memorize(state, action, state_next, reward, done)
 
         # 観測の更新
         state = state_next
@@ -156,7 +157,7 @@ class Environment:
 
     def plot_trade(self):
         buy, sell, neutral = self._create_excute_list(self.action_memory)
-        data = self.close_data
+        data = self.trade_close_data
         fig = go.Figure(data=[
             go.Scatter(x=list(range(data.shape[0])), y=data, name="price"),
             go.Scatter(x=buy, y=data[buy]-0.1, name='buy',mode='markers',marker_symbol='triangle-up',marker_color="red", marker_size=7),

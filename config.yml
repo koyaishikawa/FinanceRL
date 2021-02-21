@@ -4,11 +4,11 @@ env:
   repeat: 30
   num_actions: 3
   invest_amount: 1000000
-  cost_rate: 0.01
-  num_episodes: 1
+  cost_rate: 0.001
+  num_episodes: 10
   update_rate: 10
-  gamma: 0.7 
-  batch_size: 32
+  gamma: 0.99
+  batch_size: 16
   capacity: 10000
   lr: 0.0001
-  use_GPU: False
+  use_GPU: True
