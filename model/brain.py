@@ -3,6 +3,7 @@ from model.util import Transition
 # from model.net import Net, DuelNet, TimeNet
 import torch
 from torch import optim
+import torch.nn as nn
 import torch.nn.functional as F
 import random
 import numpy as np
@@ -43,12 +44,33 @@ class Brain:
 
         self.update_main_q_network()
 
-    def decide_action(self, state, mode):
+    def decide_action(self, state, mode, alpha=2):
         '''現在の状態に応じて、行動を決定する'''
         if mode == "trade":
             self.trade_q_network.eval()
             with torch.no_grad():
                 action = self.trade_q_network(state.to(self.dev)).max(1)[1].view(1, 1)
+            return action - 1
+
+        elif mode == 'explorer':
+            self.trade_q_network.eval()
+            with torch.no_grad():
+                tanh = nn.Tanh()
+                softmax = nn.Softmax(0)
+                q_values = self.trade_q_network(state.to(self.dev)).squeeze(0)
+                if state[0, -2] == 1:  # 前回アクションがbuy
+                    torch_tanh = tanh(torch.as_tensor([(-1)*alpha, 0, alpha], dtype=torch.float)).to(self.dev)
+
+                elif state[0, -2] == -1:  # 前回アクションがsell
+                    torch_tanh = tanh(torch.as_tensor([alpha, 0, (-1)*alpha], dtype=torch.float)).to(self.dev)
+
+                else:  # 前回アクションがhold
+                    torch_tanh = tanh(torch.zeros(3, dtype=torch.float)).to(self.dev)
+
+                prob = softmax(q_values + torch_tanh)
+                action = np.random.choice(self.num_actions, 1, p=prob.cpu().numpy())
+                action = torch.as_tensor(action, dtype=torch.long).view(1, 1).to(self.dev)
+
             return action - 1
 
         else:
@@ -61,8 +83,8 @@ class Brain:
 
         batch = Transition(*zip(*transitions))
 
-        state_batch = torch.cat(batch.state)
-        action_batch = torch.cat(batch.action)
+        state_batch = torch.cat(batch.state).to(self.dev)
+        action_batch = torch.cat(batch.action).to(self.dev)
         reward_batch = torch.cat(batch.reward).to(self.dev)
         done_batch = torch.cat(batch.done).to(self.dev)
 

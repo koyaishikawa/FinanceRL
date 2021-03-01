@@ -39,11 +39,11 @@ class Environment:
         num_states = train_data.shape[1] + 2 
         length = train_data.shape[0]
 
-        # ランダムに動く環境
-        self.random_train_data = train_data
-        self.random_close_data = close_data
-        self.random_return_data = return_data
-        self.env_random = Env(self.random_train_data, self.random_close_data, self.random_return_data, invest_amount, cost_rate) 
+        # 長期取引をしてくれやすいエージェントが動く環境
+        self.explorer_train_data = train_data
+        self.explorer_close_data = close_data
+        self.explorer_return_data = return_data
+        self.env_explorer = Env(self.explorer_train_data, self.explorer_close_data, self.explorer_return_data, invest_amount, cost_rate) 
 
         # greedyに動く環境
         self.trade_train_data = train_data
@@ -61,24 +61,24 @@ class Environment:
     def online_run(self):
         writer = SummaryWriter(log_dir="./logs")
         for episode in tqdm(range(self.num_episodes)):  # 試行数分繰り返す
-            state_random = self.env_random.reset()
+            state_explorer = self.env_explorer.reset()
             state_trade = self.env_trade.reset()
 
             self.action_memory = []
             self.total_reward = 0
 
             # numpy変数をPyTorchのテンソルに変換
-            state_random = torch.from_numpy(state_random).type(torch.FloatTensor)  
+            state_explorer = torch.from_numpy(state_explorer).type(torch.FloatTensor)  
             state_trade = torch.from_numpy(state_trade).type(torch.FloatTensor)           
             
             # size nをsize 1xnに変換
-            state_random = torch.unsqueeze(state_random, 0)  
+            state_explorer = torch.unsqueeze(state_explorer, 0)  
             state_trade = torch.unsqueeze(state_trade, 0)
 
             for step in tqdm(range(self.env_trade.length - 1)):
                     
                 state_trade, action_trade = self._play(self.env_trade, state_trade, mode="trade")
-                state_random, _ = self._play(self.env_random, state_random, mode="random")
+                state_explorer, _ = self._play(self.env_explorer, state_explorer, mode="explorer")
 
                 # Experience ReplayでQ関数を更新する
                 for _ in range(self.repeat):
@@ -130,7 +130,8 @@ class Environment:
         return state, action
 
     def utillity_function(self, reward):
-        f = lambda x: np.log(x+10) - np.log(10)
+        #f = lambda x: np.log(x+10) - np.log(10)
+        f = lamnda x: x**2 if x > 0 else (-1) * (x**2)
         reward = f(reward)
         return reward
 

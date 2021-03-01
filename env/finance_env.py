@@ -36,7 +36,7 @@ class FinanceEnv:
         self.profit_list = []  # rewardはモデル学習用で標準化されたデータを使う
 
 
-    def step(self, action):
+    def step(self, action, reward_type='hard'):
         self.time += 1
         self.done = False
 
@@ -52,13 +52,14 @@ class FinanceEnv:
 
             # during buy or sell 
             else:
-                self.reward = self.cum_return * self.prev_action - self.cost_rate * 5 * abs(self.prev_action)
+                if reward_type =='soft':
+                    self.reward = self.cum_return * self.prev_action - self.cost_rate * 5 * abs(self.prev_action)
                 self.cum_return += self.return_data[self.time]
 
         # 新しいアクションが執行
         else:
             # reward: model用
-            self.reward = self.cum_return * self.prev_action - self.cost_rate * 5 * abs(self.prev_action)
+            self.reward = self.cum_return * self.prev_action - self.cost_rate * 2 * abs(self.prev_action)
             # profit: 可視化用（実際の取引収益）
             self.profit = (self.close_data[self.time - 1] - self.profit_start) * self.share_amount - (self.cost_rate * self.invest_amount) * abs(self.prev_action)    
             self.profit /= self.invest_amount        
@@ -91,7 +92,6 @@ class FinanceEnv:
         
         self.state = np.append(self.observation, self.share_info)
         self.profit_list.append(self.profit)
-
         return self.state, np.array(self.reward).reshape(1,1), self.done, {}
         
     def reset(self):
