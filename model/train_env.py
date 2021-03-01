@@ -131,7 +131,7 @@ class Environment:
 
     def utillity_function(self, reward):
         #f = lambda x: np.log(x+10) - np.log(10)
-        f = lamnda x: x**2 if x > 0 else (-1) * (x**2)
+        f = lambda x: x**2 if x > 0 else (-1) * (x**2)
         reward = f(reward)
         return reward
 
