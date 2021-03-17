@@ -66,6 +66,7 @@ class Environment:
 
             self.action_memory = []
             self.total_reward = 0
+            self.agent.update_trade_q_function()
 
             # numpy変数をPyTorchのテンソルに変換
             state_explorer = torch.from_numpy(state_explorer).type(torch.FloatTensor)  
@@ -122,7 +123,8 @@ class Environment:
         done = torch.tensor(done).view(1,1)
 
         # メモリに経験を追加
-        self.agent.memorize(state, action, state_next, reward, done)
+        if mode != 'trade':
+            self.agent.memorize(state, action, state_next, reward, done)
 
         # 観測の更新
         state = state_next

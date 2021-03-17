@@ -44,7 +44,7 @@ class Brain:
 
         self.update_main_q_network()
 
-    def decide_action(self, state, mode, alpha=2):
+    def decide_action(self, state, mode, alpha=1):
         '''現在の状態に応じて、行動を決定する'''
         if mode == "trade":
             self.trade_q_network.eval()
@@ -125,6 +125,7 @@ class Brain:
 
         loss = F.smooth_l1_loss(self.state_action_values,
                                 self.expected_state_action_values)
+        #print(f'loss:{loss}')
 
         self.optimizer.zero_grad()
         loss.backward()

@@ -36,7 +36,7 @@ class FinanceEnv:
         self.profit_list = []  # rewardはモデル学習用で標準化されたデータを使う
 
 
-    def step(self, action, reward_type='hard'):
+    def step(self, action, reward_type='soft', beta=10):
         self.time += 1
         self.done = False
 
@@ -53,13 +53,13 @@ class FinanceEnv:
             # during buy or sell 
             else:
                 if reward_type =='soft':
-                    self.reward = self.cum_return * self.prev_action - self.cost_rate * 5 * abs(self.prev_action)
+                    self.reward = self.cum_return * self.prev_action - self.cost_rate * abs(self.prev_action)
                 self.cum_return += self.return_data[self.time]
 
         # 新しいアクションが執行
         else:
             # reward: model用
-            self.reward = self.cum_return * self.prev_action - self.cost_rate * 2 * abs(self.prev_action)
+            self.reward = beta * (self.cum_return * self.prev_action - self.cost_rate * abs(action))  # cum_returnは一旦正規化なしの生データで代用
             # profit: 可視化用（実際の取引収益）
             self.profit = (self.close_data[self.time - 1] - self.profit_start) * self.share_amount - (self.cost_rate * self.invest_amount) * abs(self.prev_action)    
             self.profit /= self.invest_amount        
@@ -78,7 +78,7 @@ class FinanceEnv:
 
             # excute(決済)
             else:
-                self.done = True
+                self.done = False
                 self.share_amount = 0
                 self.cum_return = 0 
                 self.profit_start = 0 

@@ -42,7 +42,7 @@ def calculate_index(reward_memory):
 
     print(f'return_mean:{return_mean}\nreturn_std:{return_std} \n DD_mean:{dd_mean} \n DD_std:{dd_std} \n sharp_ratio:{sharp_ratio} \n MDD:{mdd} \n win_rate{win_rate} \n Trade_Num:{trade_num}')
 
-def EWMA(data, windows=60):
+def EWMA(data, windows):
     ema_mean = np.zeros(data.shape[0])
     ema_var = np.zeros(data.shape[0])
     alpha = 2 / (windows + 1)
@@ -60,7 +60,7 @@ def EWMA(data, windows=60):
         prev_var = present_var
     return ema_mean, ema_var
 
-def make_env_data(data):
+def make_env_data(data, windows=30):
     """
     data[pd.DataFrame] : closeのみ
 
@@ -68,7 +68,7 @@ def make_env_data(data):
         normalized              normalized
 
     """
-    ema_mean, ema_var = EWMA(data.values)
+    ema_mean, ema_var = EWMA(data.values, windows)
     train_data = data.copy()
     train_data['mean'] = ema_mean
     train_data['var'] = ema_var

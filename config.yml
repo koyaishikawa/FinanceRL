@@ -1,14 +1,14 @@
 data: data/nikkei.csv
 model: Net
 env:
-  repeat: 30
+  repeat: 20
   num_actions: 3
   invest_amount: 1000000
-  cost_rate: 0.001
-  num_episodes: 10
-  update_rate: 10
+  cost_rate: 0.01
+  num_episodes: 30
+  update_rate: 1
   gamma: 0.99
   batch_size: 16
   capacity: 10000
-  lr: 0.0001
-  use_GPU: True
+  lr: 0.01
+  use_GPU: False
