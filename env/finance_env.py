@@ -4,7 +4,7 @@ import numpy as np
 
 # 離散環境
 class FinanceEnv:
-    def __init__(self, train_data, close_data, return_data, invest_amount, cost_rate):
+    def __init__(self, train_data, close_data, return_data, max_price, invest_amount, cost_rate):
         """
         train_data[np.ndarray] : 学習データ
         close_data[np.array] : 実際のcloseデータ 利益計算用
@@ -23,6 +23,7 @@ class FinanceEnv:
         self.share = 0
         self.prev_action = 0
         self.cum_return = 0
+        self.max_price = max_price
 
         self.share_info = np.array([self.prev_action, self.cum_return])  # [前回アクション, トレード中の収益]
         self.observation = np.append(self.train_data[self.time], self.share_info) 
@@ -78,7 +79,7 @@ class FinanceEnv:
 
             # excute(決済)
             else:
-                self.done = False
+                self.done = True
                 self.share_amount = 0
                 self.cum_return = 0 
                 self.profit_start = 0 

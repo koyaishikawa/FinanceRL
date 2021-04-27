@@ -89,3 +89,26 @@ def make_env_data(data, windows=30):
     train_data = train_data.iloc[:,1:].to_numpy()
 
     return train_data, close_data, return_data
+
+def make_env_data_minmax(data, windows=30):
+    """
+    data[pd.DataFrame] : closeのみ
+
+    --> train_data, close_data, return_data　[np.ndarray]
+
+    """
+    data['diff'] = data['Close'].diff()
+    data = data[~data.isnull().any(1)]
+    max_price = data['diff'].abs().max()
+    data['diff'] = data['diff']/max_price
+
+    for i in range(60):
+        data[f'return_{i}'] = data['diff'].shift(i)
+    data = data.loc[~data.isnull().any(axis=1)]
+        
+    data.drop(columns = ['diff'], inplace=True)
+    return_data = data['return_0'].to_numpy()
+    close_data = data['Close'].to_numpy()
+    train_data = data.iloc[:,1:].to_numpy()
+
+    return train_data, close_data, return_data, max_price

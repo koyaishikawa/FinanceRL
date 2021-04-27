@@ -3,8 +3,8 @@ model: Net
 env:
   repeat: 20
   num_actions: 3
-  invest_amount: 1000000
-  cost_rate: 0.01
+  invest_amount: 1000000 # 10000000円
+  cost_rate: 0.02  # 0.02円
   num_episodes: 30
   update_rate: 1
   gamma: 0.99
