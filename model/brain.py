@@ -53,30 +53,14 @@ class Brain:
             return action - 1
 
         elif mode == 'explorer':
-            self.trade_q_network.eval()
-            with torch.no_grad():
-                tanh = nn.Tanh()
-                softmax = nn.Softmax(0)
-                q_values = self.trade_q_network(state.to(self.dev)).squeeze(0)
-                if state[0, -2] == 1:  # 前回アクションがbuy
-                    torch_tanh = tanh(torch.as_tensor([(-1)*alpha, 0, alpha], dtype=torch.float)).to(self.dev)
-
-                elif state[0, -2] == -1:  # 前回アクションがsell
-                    torch_tanh = tanh(torch.as_tensor([alpha, 0, (-1)*alpha], dtype=torch.float)).to(self.dev)
-
-                else:  # 前回アクションがhold
-                    torch_tanh = tanh(torch.zeros(3, dtype=torch.float)).to(self.dev)
-
-                prob = softmax(q_values + torch_tanh)
-                action = np.random.choice(self.num_actions, 1, p=prob.cpu().numpy())
-                action = torch.as_tensor(action, dtype=torch.long).view(1, 1).to(self.dev)
-
+            action = torch.LongTensor(
+                [[random.randrange(self.num_actions)]]).to(self.dev)
             return action - 1
 
         else:
             action = torch.LongTensor(
                 [[random.randrange(self.num_actions)]]).to(self.dev)
-        return action - 1
+            return action - 1
 
     def make_minibatch(self):
         transitions = self.memory.sample(self.batch_size)

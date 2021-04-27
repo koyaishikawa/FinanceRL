@@ -33,19 +33,19 @@ class Net(nn.Module):
 
     def __init__(self, n_in, n_mid=120, n_out=3):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(n_in-2, n_mid)
+        self.fc1 = nn.Linear(n_in-1, n_mid)
         self.fc2 = nn.Linear(n_mid, n_mid)
         self.fc3 = nn.Linear(n_mid, n_mid//2)
         self.fc4 = nn.Linear(n_mid//2, n_out)
-        self.fc5 = nn.Linear(n_out + 2, n_out)
+        self.fc5 = nn.Linear(n_out + 1, n_out)
 
     def forward(self, x):
-        h1 = F.relu(self.fc1(x[:,:-2]))
+        h1 = F.relu(self.fc1(x[:,:-1]))
         h2 = F.relu(self.fc2(h1))
         h3 = F.relu(self.fc3(h2))
         h4 = F.relu(self.fc4(h3))
 
-        output = torch.cat([h4, x[:, -2:]], axis=1)
+        output = torch.cat([h4, x[:, -1:]], axis=1)
         output = self.fc5(output)
 
         return output

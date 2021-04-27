@@ -15,10 +15,10 @@ class Environment:
                  train_data,
                  close_data,
                  return_data,
+                 max_price,
                  Model,
                  repeat,
                  num_actions,
-                 invest_amount,
                  cost_rate,
                  num_episodes,
                  update_rate,
@@ -35,21 +35,21 @@ class Environment:
         Model : 深層学習モデル
         repeat : 一回行動が進行した際に何回エポックを回すか
         """
-        # 特徴量 + [現在の利益 + 前回のアクション]
-        num_states = train_data.shape[1] + 2 
+        # 特徴量 + [現在の利益]
+        num_states = train_data.shape[1] + 1
         length = train_data.shape[0]
 
         # 長期取引をしてくれやすいエージェントが動く環境
         self.explorer_train_data = train_data
         self.explorer_close_data = close_data
         self.explorer_return_data = return_data
-        self.env_explorer = Env(self.explorer_train_data, self.explorer_close_data, self.explorer_return_data, invest_amount, cost_rate) 
+        self.env_explorer = Env(self.explorer_train_data, self.explorer_close_data, self.explorer_return_data, max_price, cost_rate) 
 
         # greedyに動く環境
         self.trade_train_data = train_data
         self.trade_close_data = close_data
         self.trade_return_data = return_data
-        self.env_trade = Env(self.trade_train_data, self.trade_close_data, self.trade_return_data, invest_amount, cost_rate)            
+        self.env_trade = Env(self.trade_train_data, self.trade_close_data, self.trade_return_data, max_price, cost_rate)            
 
         self.agent = Agent(num_states, num_actions, Model, use_GPU, capacity, lr, batch_size, gamma)
         self.repeat = repeat
@@ -77,7 +77,6 @@ class Environment:
             state_trade = torch.unsqueeze(state_trade, 0)
 
             for step in tqdm(range(self.env_trade.length - 1)):
-                    
                 state_trade, action_trade = self._play(self.env_trade, state_trade, mode="trade")
                 state_explorer, _ = self._play(self.env_explorer, state_explorer, mode="explorer")
 
