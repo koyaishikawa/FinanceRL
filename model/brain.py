@@ -97,7 +97,7 @@ class Brain:
         a_m_non_final_next_states = a_m[non_final_mask].view(-1, 1)
 
         next_state_values[non_final_mask] = self.target_q_network(
-            self.non_final_next_states.to(self.dev)).gather(1, a_m_non_final_next_states.to(self.dev)).detach().squeeze()
+            self.non_final_next_states.to(self.dev)).gather(1, self.action_batch + 1).detach().squeeze()
 
         expected_state_action_values = self.reward_batch +  (~self.done_batch) * self.gamma * next_state_values.unsqueeze(1)
         return expected_state_action_values
